@@ -21,4 +21,11 @@ class Account {
       'total': total,
     };
   }
+
+  Map<String, Object?> toMapWithoutId() {
+    return {
+      'name': name,
+      'total': total,
+    };
+  }
 }

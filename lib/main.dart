@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:namer_app/src/accounts/account.dart';
 import 'package:namer_app/src/database/database.dart';
 import 'package:provider/provider.dart';
 
@@ -55,7 +56,7 @@ class Dog {
 }
 
 class MyAppState extends ChangeNotifier {
-
+    final DatabaseHelper dbhelper = DatabaseHelper();
 }
 
 class MyHomePage extends StatefulWidget {
@@ -116,16 +117,111 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return Column(
-        children: [
-          SizedBox(height: 40),
-          Text('Landing Page'),
-        ],
-    );
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  List<Account> _data = [];
+
+  Future<void> fetchData() async {
+    final DatabaseHelper dbhelper = DatabaseHelper();
+    var accounts = await dbhelper.accounts();
+
+    setState(() {
+      _data = accounts;
+    });
   }
+
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameEditingController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameEditingController.dispose();
+    super.dispose();
+  }
+
+@override
+Widget build(BuildContext context) {
+  return ListView(
+    padding: EdgeInsets.symmetric(horizontal: 20),
+    children: [
+      SizedBox(height: 40),
+      Center(child: Text('Landing Page', style: TextStyle(fontSize: 24))),
+      if (_data.isEmpty) ...[
+        SizedBox(height: 30),
+        Text(
+          "Willkommen, so wie es aussieht hast du noch keinen Account.",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
+        ),
+        SizedBox(height: 30),
+        Text(
+          "Bitte gib dem Account hier einen Namen:",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
+        ),
+        SizedBox(height: 16),
+        Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nameEditingController,
+                decoration: InputDecoration(
+                  labelText: "Name",
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Bitte geben Sie einen gültigen Namen ein.";
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    String name = _nameEditingController.text;
+                    Account account = Account(id: 0, name: name, total: 0.00);
+
+                    DatabaseHelper dh = DatabaseHelper();
+                    await dh.insertAccount(account);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Der Account wurde erstellt.')),
+                    );
+
+                    // Reload the data and update the UI
+                    setState(() {
+                      fetchData();
+                    });
+                  }
+                },
+                child: Text("Bestätigen"),
+              ),
+            ],
+          ),
+        ),
+      ] else ...[
+        ListBody(
+          children: [
+            Text("Kontoliste:", style: TextStyle(fontSize: 16)),
+            SizedBox(height: 10),
+            for (var account in _data) // Assuming _data contains the list of accounts
+              ListTile(
+                title: Text(account.name), // Display account name
+              ),
+          ],
+        ),
+      ],
+    ],
+  );
+}
+
 }
 class OtherPage extends StatelessWidget {
   @override

@@ -1,3 +1,5 @@
+import 'package:namer_app/src/accounts/account.dart';
+import 'package:namer_app/src/categories/category.dart';
 import 'package:namer_app/src/expenses/expense.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -24,9 +26,17 @@ class DatabaseHelper {
 
   // Method to initialize the database
   Future<Database> _initDatabase() async {
+    String dbPath = await getDatabasesPath();
+    String path = join(dbPath, 'expense_tracker.db');
+
+    await deleteDatabase(path);
+
     return await openDatabase(
       join(await getDatabasesPath(), 'expense_tracker.db'),
       onCreate: (db, version) async {
+        await db.execute('DROP TABLE IF EXISTS accounts');
+        await db.execute('DROP TABLE IF EXISTS categories');
+        await db.execute('DROP TABLE IF EXISTS expenses');
         await db.execute(
             'CREATE TABLE IF NOT EXISTS accounts(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, total REAL)');
         await db.execute(
@@ -80,7 +90,7 @@ class DatabaseHelper {
     );
   }
 
-  Future<void> deleteDog(int id) async {
+  Future<void> deleteExpense(int id) async {
     final db = await database;
 
     await db.delete(
@@ -91,5 +101,100 @@ class DatabaseHelper {
   }
 
   /* Account */
+  Future<void> insertAccount(Account account) async {
+    final db = await database;
+
+    await db.insert(
+      'accounts', 
+      account.toMapWithoutId(), 
+      conflictAlgorithm: ConflictAlgorithm.rollback
+    );
+  }
+
+  Future<List<Account>> accounts() async {
+    final db = await database;
+
+    final List<Map<String, Object?>> accountMaps = await db.query('accounts');
+
+    return [
+      for(final {
+        'id': id as int,
+        'name': name as String,
+        'total': total as double,
+      } in accountMaps)
+      Account(id: id, name: name, total: total)
+    ];
+  }
+
+  Future<void> updateAccount(Account account) async {
+    final db = await database;
+
+    await db.update(
+      'accounts',
+      account.toMap(),
+      where: 'id = ?',
+      whereArgs: [account.id],
+      conflictAlgorithm: ConflictAlgorithm.rollback,
+    );
+  }
+
+  Future<void> deleteAccount(int id) async {
+    final db = await database;
+
+    await db.delete(
+      'accounts',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+
+  /* Categories */
+  Future<void> insertCategory(Category category) async {
+    final db = await database;
+
+    await db.insert(
+      'categories',
+      category.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.rollback,
+    );
+  }
+
+  Future<List<Category>> categories() async {
+    final db = await database;
+
+    final List<Map<String, Object?>> categoryMaps = await db.query('categories'); 
+
+    return [
+      for(final {
+        'id': id as int,
+        'name': name as String,
+        'description': description as String,
+      } in categoryMaps)
+      Category(id: id, name: name, description: description)
+    ];
+  }
+
+  Future<void> updateCategory(Category category) async {
+    final db = await database;
+    
+    await db.update(
+      'categories',
+      category.toMap(),
+      where: 'id = ?',
+      whereArgs: [category.id],
+      conflictAlgorithm: ConflictAlgorithm.rollback
+    );
+  }
+
+  Future<void> deleteCategory(int id) async {
+    final db = await database;
+
+    await db.delete(
+      'categories',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 
 }
