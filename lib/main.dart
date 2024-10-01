@@ -3,6 +3,8 @@ import 'package:namer_app/src/accounts/account.dart';
 import 'package:namer_app/src/database/database.dart';
 import 'package:provider/provider.dart';
 
+import 'src/expenses/expense.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -48,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
       case 0:
         page = LandingPage();
       case 1:
-        page = OtherPage();
+        page = ExpensePage();
       default:
         throw UnimplementedError('no widget for $selectedIndex');
     }
@@ -57,9 +59,9 @@ class _MyHomePageState extends State<MyHomePage> {
         body: Row(
           children: [
             Expanded(
-              child: Container(color: const Color.fromARGB(255, 255, 255, 255), child: page),
+              child: Container(
+                  color: const Color.fromARGB(255, 255, 255, 255), child: page),
             )
-
           ],
         ),
         bottomNavigationBar: BottomAppBar(
@@ -213,7 +215,7 @@ class _LandingPageState extends State<LandingPage> {
                                 );
 
                                 // Reload the data and update the UI
-                                  _setData();
+                                _setData();
                               }
                             },
                             child: Text("Bestätigen"),
@@ -227,9 +229,12 @@ class _LandingPageState extends State<LandingPage> {
                   children: [
                     Center(
                       child: Text(_data.first.name,
-                      style: TextStyle(fontSize: 32)),),
+                          style: TextStyle(fontSize: 32)),
+                    ),
                     SizedBox(height: 30),
-                    Center(child: Text("Ausgaben", style: TextStyle(fontSize: 24)),),
+                    Center(
+                      child: Text("Ausgaben", style: TextStyle(fontSize: 24)),
+                    ),
                     SizedBox(height: 10),
                     Center(
                       child: Text(
@@ -247,14 +252,99 @@ class _LandingPageState extends State<LandingPage> {
       ],
     );
   }
-
 }
+
 class OtherPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Text('Other Page'),
+      ],
+    );
+  }
+}
+
+class ExpensePage extends StatefulWidget {
+  @override
+  State<ExpensePage> createState() => _ExpensePageState();
+}
+
+class _ExpensePageState extends State<ExpensePage> {
+  final _formKey = GlobalKey<FormState>();
+
+  List<Expense> _data = [];
+  Future<void>? _futureData;
+
+  Future<void> fetchData() async {
+    final DatabaseHelper dbhelper = DatabaseHelper();
+    var expenses = await dbhelper.expenses();
+
+    setState(() {
+      _data = expenses;
+    });
+  }
+
+  void _setData() {
+    setState(() {
+      _futureData = fetchData();
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _setData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        SizedBox(height: 40),
+        Center(child: Text('Startseite', style: TextStyle(fontSize: 24))),
+        SizedBox(height: 30),
+        FutureBuilder(
+            future: _futureData,
+            builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+              // Loading/Waiting
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return ListBody(
+                  children: [
+                    Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  ],
+                );
+              } else if (snapshot.connectionState == ConnectionState.done &&
+                  _data.isEmpty) {
+                return ListBody(
+                  children: [
+                    Text(
+                      "Es wurden noch keine Ausgaben erfasst. Zum erfassen einer Ausgabe, drücken Sie einfach auf das Plus Symbol.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    )
+                  ],
+                );
+              } else {
+                return ListBody(
+                  children: [
+                    for (var expense in _data)
+                      ListTile(
+                        title: Text(expense.title),
+                        subtitle: Text("$expense.createdOn"),
+                        trailing: Text("$expense.amount"),
+                      ),
+                  ],
+                );
+              }
+            }),
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: Icon(Icons.add),
+              label: Text(""),
+              )
       ],
     );
   }

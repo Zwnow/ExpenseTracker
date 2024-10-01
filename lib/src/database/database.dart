@@ -42,7 +42,7 @@ class DatabaseHelper {
         await db.execute(
             'CREATE TABLE IF NOT EXISTS categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT)');
         await db.execute(
-            'CREATE TABLE IF NOT EXISTS expenses(id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, category_id INTEGER, title TEXT NOT NULL, amount REAL NOT NULL, created_on TEXT NOT NULL)');
+            'CREATE TABLE IF NOT EXISTS expenses(id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, category_id INTEGER, title TEXT NOT NULL, amount REAL NOT NULL, created_on TEXT NOT NULL, interval TEXT NOT NULL)');
       },
       version: 1,
     );
@@ -74,8 +74,9 @@ class DatabaseHelper {
         'title': title as String,
         'amount': amount as double,
         'created_on': createdOn as String,
+        'interval': interval as PaymentInterval,
       } in expenseMaps)
-      Expense(DateTime.parse(createdOn), title, amount, accountId, categoryId, id)
+      Expense(DateTime.parse(createdOn), title, amount, accountId, categoryId, id, interval)
     ];
   }
 

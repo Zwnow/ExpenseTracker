@@ -1,7 +1,18 @@
+enum PaymentInterval {
+  single,       // One-time payment
+  weekly,       // Payment every week
+  biWeekly,     // Payment every two weeks
+  monthly,      // Payment every month
+  quarterly,    // Payment every three months
+  semiAnnual,   // Payment every six months
+  annual,       // Payment once a year
+}
+
 class Expense {
   int id;
   int accountId;
   int categoryId;
+  PaymentInterval interval;
   double amount;
   String title;
   DateTime createdOn;
@@ -13,10 +24,11 @@ class Expense {
     this.id,
     this.accountId,
     this.categoryId,
+    this.interval,
   );
 
-  factory Expense(DateTime createdOn, String title, double amount, int accountId, int categoryId, int id) {
-    return Expense._internal(createdOn, amount, title, id, accountId, categoryId);
+  factory Expense(DateTime createdOn, String title, double amount, int accountId, int categoryId, int id, PaymentInterval interval) {
+    return Expense._internal(createdOn, amount, title, id, accountId, categoryId, interval);
   }
 
   @override
