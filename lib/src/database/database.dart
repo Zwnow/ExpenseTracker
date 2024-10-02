@@ -37,12 +37,21 @@ class DatabaseHelper {
         await db.execute('DROP TABLE IF EXISTS accounts');
         await db.execute('DROP TABLE IF EXISTS categories');
         await db.execute('DROP TABLE IF EXISTS expenses');
+        print("INIT: DROPPED TABLES");
         await db.execute(
             'CREATE TABLE IF NOT EXISTS accounts(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, total REAL)');
+        print("INIT: CREATED ACCOUNTS TABLE");
         await db.execute(
             'CREATE TABLE IF NOT EXISTS categories(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT)');
+        print("INIT: CREATED CATEGORIES TABLE");
+
+        await db.execute("INSERT INTO categories (name) VALUES ('Lebensmittel')");
+        await db.execute("INSERT INTO categories (name) VALUES ('Hygenie')");
+        print("INIT: CREATED CATEGORIES SAMPLE VALUES");
+
         await db.execute(
             'CREATE TABLE IF NOT EXISTS expenses(id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER NOT NULL, category_id INTEGER, title TEXT NOT NULL, amount REAL NOT NULL, created_on TEXT NOT NULL, interval TEXT NOT NULL)');
+        print("INIT: CREATED EXPENSES TABLE");
       },
       version: 1,
     );
@@ -61,24 +70,28 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Expense>> expenses() async {
-    final db = await database;
+Future<List<Expense>> expenses() async {
+    final db = await database; // Ensure you're getting the database instance
 
+    // Query the database for expenses
     final List<Map<String, Object?>> expenseMaps = await db.query('expenses');
 
-    return [
-      for(final {
-        'id': id as int,
-        'account_id': accountId as int,
-        'category_id': categoryId as int,
-        'title': title as String,
-        'amount': amount as double,
-        'created_on': createdOn as String,
-        'interval': interval as PaymentInterval,
-      } in expenseMaps)
-      Expense(DateTime.parse(createdOn), title, amount, accountId, categoryId, id, interval)
-    ];
+    // Map each entry to an Expense object
+    return expenseMaps.map((expenseMap) {
+      return Expense(
+        DateTime.parse(expenseMap['created_on']
+            as String), // Parsing the created_on field to DateTime
+        expenseMap['title'] as String,
+        expenseMap['amount'] as double,
+        expenseMap['account_id'] as int,
+        expenseMap['category_id'] as int,
+        expenseMap['id'] as int,
+        expenseMap['interval']
+            as PaymentInterval, // Convert the interval to the PaymentInterval enum
+      );
+    }).toList();
   }
+
 
   Future<void> updateExpense(Expense expense) async {
     final db = await database;
@@ -161,19 +174,21 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Category>> categories() async {
-    final db = await database;
+Future<List<Category>> categories() async {
+    final db = await database; // Ensure you're getting the database instance
 
-    final List<Map<String, Object?>> categoryMaps = await db.query('categories'); 
+    // Query the database for categories
+    final List<Map<String, Object?>> categoryMaps =
+        await db.query('categories');
 
-    return [
-      for(final {
-        'id': id as int,
-        'name': name as String,
-        'description': description as String,
-      } in categoryMaps)
-      Category(id: id, name: name, description: description)
-    ];
+    // Map each entry to a Category object
+    return categoryMaps.map((categoryMap) {
+      return Category(
+        id: categoryMap['id'] as int,
+        name: categoryMap['name'] as String,
+        description: categoryMap['description'] as String,
+      );
+    }).toList();
   }
 
   Future<void> updateCategory(Category category) async {

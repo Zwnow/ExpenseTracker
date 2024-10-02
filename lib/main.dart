@@ -3,6 +3,7 @@ import 'package:namer_app/src/accounts/account.dart';
 import 'package:namer_app/src/database/database.dart';
 import 'package:provider/provider.dart';
 
+import 'src/categories/category.dart';
 import 'src/expenses/expense.dart';
 
 void main() async {
@@ -273,15 +274,19 @@ class ExpensePage extends StatefulWidget {
 class _ExpensePageState extends State<ExpensePage> {
   final _formKey = GlobalKey<FormState>();
 
-  List<Expense> _data = [];
+  List<Expense> _expenses = [];
+  List<Category> _categories = [];
   Future<void>? _futureData;
 
   Future<void> fetchData() async {
     final DatabaseHelper dbhelper = DatabaseHelper();
     var expenses = await dbhelper.expenses();
+    var categories = await dbhelper.categories();
+    print(categories);
 
     setState(() {
-      _data = expenses;
+      _expenses = expenses;
+      _categories = categories;
     });
   }
 
@@ -299,53 +304,118 @@ class _ExpensePageState extends State<ExpensePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        SizedBox(height: 40),
-        Center(child: Text('Startseite', style: TextStyle(fontSize: 24))),
-        SizedBox(height: 30),
-        FutureBuilder(
-            future: _futureData,
-            builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
-              // Loading/Waiting
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return ListBody(
-                  children: [
-                    Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  ],
-                );
-              } else if (snapshot.connectionState == ConnectionState.done &&
-                  _data.isEmpty) {
-                return ListBody(
-                  children: [
-                    Text(
-                      "Es wurden noch keine Ausgaben erfasst. Zum erfassen einer Ausgabe, drücken Sie einfach auf das Plus Symbol.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16),
-                    )
-                  ],
-                );
-              } else {
-                return ListBody(
-                  children: [
-                    for (var expense in _data)
-                      ListTile(
-                        title: Text(expense.title),
-                        subtitle: Text("$expense.createdOn"),
-                        trailing: Text("$expense.amount"),
-                      ),
-                  ],
-                );
-              }
-            }),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: Icon(Icons.add),
-              label: Text(""),
-              )
+    return Scaffold(
+        body: Column(
+        children: [
+        Expanded(
+            child: ListView(children: [
+          SizedBox(height: 10),
+          Center(child: Text('Ausgaben', style: TextStyle(fontSize: 24))),
+          SizedBox(height: 30),
+          FutureBuilder(
+              future: _futureData,
+              builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+                // Loading/Waiting
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return ListBody(
+                    children: [
+                      Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    ],
+                  );
+                } else if (snapshot.connectionState == ConnectionState.done &&
+                    _expenses.isEmpty) {
+                  return ListBody(
+                    children: [
+                      Text(
+                        "Es wurden noch keine Ausgaben erfasst. Zum erfassen einer Ausgabe, drücken Sie einfach auf das Plus Symbol.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
+                      )
+                    ],
+                  );
+                } else {
+                  return ListBody(
+                    children: [
+                      for (var expense in _expenses)
+                        ListTile(
+                          title: Text(expense.title),
+                          subtitle: Text("$expense.createdOn"),
+                          trailing: Text("$expense.amount"),
+                        ),
+                    ],
+                  );
+                }
+              })
+        ])),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ElevatedButton.icon(
+            onPressed: () {
+              _showAddExepenseForm(context, _categories);
+            },
+            icon: Icon(Icons.add),
+            label: Text(""),
+            style: ElevatedButton.styleFrom(
+              iconColor: Colors.white,
+              backgroundColor: Colors.black,
+              shape: StadiumBorder(), // Makes the button pill-shaped
+              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            ),
+          ),
+        )
       ],
-    );
+    ));
   }
+}
+
+void _showAddExepenseForm(BuildContext context, List<Category> categories) {
+  print(categories);
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Add an expense"),
+        content: SingleChildScrollView(
+          child: Form(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Titel"),
+                ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Summe"),
+                ),
+                DropdownButton(
+                  hint: Text("Kategorie"),
+                  items: categories.map(
+                    (category) {
+                      return DropdownMenuItem(value: category.id, child: Text(category.name));
+                    }
+                  ).toList(), 
+                  onChanged: (value) {
+                    print(value);
+                  })
+              ],
+            )
+          )
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text("Abbrechen")
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+
+            }, child: Text("Ok"))
+        ],
+      );
+    }
+  );
 }
