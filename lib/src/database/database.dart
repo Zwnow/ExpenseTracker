@@ -186,7 +186,7 @@ Future<List<Category>> categories() async {
       return Category(
         id: categoryMap['id'] as int,
         name: categoryMap['name'] as String,
-        description: categoryMap['description'] as String,
+        description: categoryMap['description'] as String?,
       );
     }).toList();
   }

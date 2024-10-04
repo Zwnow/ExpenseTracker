@@ -272,17 +272,15 @@ class ExpensePage extends StatefulWidget {
 }
 
 class _ExpensePageState extends State<ExpensePage> {
-  final _formKey = GlobalKey<FormState>();
-
   List<Expense> _expenses = [];
   List<Category> _categories = [];
   Future<void>? _futureData;
 
   Future<void> fetchData() async {
+    print("Fetching");
     final DatabaseHelper dbhelper = DatabaseHelper();
     var expenses = await dbhelper.expenses();
     var categories = await dbhelper.categories();
-    print(categories);
 
     setState(() {
       _expenses = expenses;
@@ -371,51 +369,65 @@ class _ExpensePageState extends State<ExpensePage> {
 }
 
 void _showAddExepenseForm(BuildContext context, List<Category> categories) {
-  print(categories);
+  String selection = "";
+
   showDialog(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
         title: Text("Add an expense"),
-        content: SingleChildScrollView(
-          child: Form(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Titel"),
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Summe"),
-                ),
-                DropdownButton(
-                  hint: Text("Kategorie"),
-                  items: categories.map(
-                    (category) {
-                      return DropdownMenuItem(value: category.id, child: Text(category.name));
-                    }
-                  ).toList(), 
-                  onChanged: (value) {
-                    print(value);
-                  })
-              ],
+          content: SingleChildScrollView(
+              child: Form(
+                  child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                decoration: InputDecoration(labelText: "Titel"),
+              ),
+              SizedBox(height: 30),
+              TextFormField(
+                decoration: InputDecoration(labelText: "Summe"),
+              ),
+              SizedBox(height: 30),
+              StatefulBuilder(
+                  builder: (BuildContext context, StateSetter setState) {
+                return DropdownButton(
+                    isExpanded: true,
+                    hint: Text(
+                      selection.isEmpty ? 'Kategorie' : selection,
+                    ),
+                    items: categories.map((category) {
+                      return DropdownMenuItem(
+                          value: category, child: Text(category.name));
+                    }).toList(),
+                    onChanged: (selectedCategory) {
+                      setState(() {
+                        selection = selectedCategory!.name;
+                      });
+                    });
+              }),
+            ],
+          ))),
+          actions: [
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                TextButton(
+                    onPressed: () {
+                      /* Make insertion */
+                      Navigator.of(context).pop();
+                    },
+                    child: Text("Abbrechen")),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text("Ok"))
+              ]),
             )
-          )
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text("Abbrechen")
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-
-            }, child: Text("Ok"))
-        ],
-      );
+          ],
+        );
     }
   );
 }

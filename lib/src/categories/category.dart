@@ -1,7 +1,7 @@
 class Category {
   int id;
   String name;
-  String description;
+  String? description;
 
   Category({
     required this.id, 
